@@ -415,7 +415,7 @@ void setup() {
   ArduinoOTA.begin();
   ArduinoOTA.onStart(onOTAStart);
 
-  mqttClient.setServer(MQTT_SERVER, 1883);
+  mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
   mqttClient.setCallback(mqttCallback);
 
   #if LOGGING
@@ -541,8 +541,8 @@ void loop() {
   }
 
   long now = millis();
-  // If MQTT client can't connect to broker, then reconnect
-  if ((now - lastConnectTime) > 5000) {
+  // If MQTT client can't connect to broker, then reconnect every 30 seconds
+  if ((now - lastConnectTime) > 30000) {
     lastConnectTime = now;
     if (!mqttClient.connected()) {
       DLOG("Reconnecting MQTT\n");
@@ -558,7 +558,7 @@ void loop() {
       }
     }
   }
-  // Wakeup the roomba at fixed intervals
+  // Wakeup the roomba at fixed intervals - every 50 seconds
   if (now - lastWakeupTime > 50000) {
     lastWakeupTime = now;
     if (!roombaState.cleaning) {
