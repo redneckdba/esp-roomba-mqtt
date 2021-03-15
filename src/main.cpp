@@ -1,15 +1,13 @@
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h>
+#include <WiFi.h>
+#include <ESPmDNS.h>
 #include <ArduinoOTA.h>
 #include <Roomba.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <Timezone.h>
 #include "config.h"
-extern "C" {
-#include "user_interface.h"
-}
+
 
 // Remote debugging over telnet. Just run:
 // `telnet roomba.local` OR `nc roomba.local 23`
@@ -23,7 +21,7 @@ RemoteDebug Debug;
 #endif
 
 // Roomba setup
-Roomba roomba(&Serial, Roomba::Baud115200);
+Roomba roomba(&Serial2, Roomba::Baud115200);
 
 // Roomba state
 typedef struct {
@@ -55,7 +53,7 @@ uint8_t sensors[] = {
   Roomba::SensorVoltage, // PID 22, 2 bytes, mV, unsigned
   Roomba::SensorCurrent, // PID 23, 2 bytes, mA, signed
   Roomba::SensorBatteryCharge, // PID 25, 2 bytes, mAh, unsigned
-  Roomba::SensorBatteryCapacity // PID 26, 2 bytes, mAh, unsigned
+  Roomba::SensorBatteryCapacity, // PID 26, 2 bytes, mAh, unsigned  
 };
 
 // Central European Time (Frankfurt, Paris)
@@ -405,8 +403,8 @@ void setup() {
 
   // Set Hostname.
   String hostname(HOSTNAME);
-  WiFi.hostname(hostname);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.setHostname((const char *)hostname.c_str());
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
   }

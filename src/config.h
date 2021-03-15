@@ -1,7 +1,7 @@
 #include "secrets.h"
 
 #define HOSTNAME "roomba" // e.g. roomba.local
-#define BRC_PIN 14
+#define BRC_PIN 5
 #define ROOMBA_650_SLEEP_FIX 1
 
 #define SET_DATETIME 1

@@ -1,7 +1,6 @@
 # esp-roomba-mqtt
-![TravisCI Build Status](https://travis-ci.org/johnboiles/esp-roomba-mqtt.svg?branch=master)
 
-ESP8266 MQTT Roomba controller (Useful for hooking up old Roombas to Home Assistant)
+ESP32 MQTT Roomba controller (Useful for hooking up old Roombas to Home Assistant)
 
 ## Parts:
 * [ESP12E](http://www.ebay.com/itm/121951859776) ESP8266 Wifi microcontroller ($3-4) Though any ESP module will probably work
