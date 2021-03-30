@@ -62,6 +62,10 @@ uint8_t sensors[] = {
     Roomba::SensorCurrent,         // PID 23, 2 bytes, mA, signed
     Roomba::SensorBatteryCharge,   // PID 25, 2 bytes, mAh, unsigned
     Roomba::SensorBatteryCapacity, // PID 26, 2 bytes, mAh, unsigned
+    Roomba::SensorCliffLeft,
+    Roomba::SensorCliffRight,
+    Roomba::SensorCliffFrontLeft,
+    Roomba::SensorCliffFrontRight
 };
 
 // Central European Time (Frankfurt, Paris)
@@ -87,13 +91,13 @@ void wakeup()
   delay(200);
   pinMode(BRC_PIN, INPUT);
   delay(200);
-  Serial.write(128); // Start
+  roomba.start();
 }
 
 void wakeOnDock()
 {
   DLOG("Wakeup Roomba on dock\n");
-  wakeup();
+  //wakeup();
 #ifdef ROOMBA_650_SLEEP_FIX
   // Some black magic from @AndiTheBest to keep the Roomba awake on the dock
   // See https://github.com/johnboiles/esp-roomba-mqtt/issues/3#issuecomment-402096638
@@ -101,15 +105,25 @@ void wakeOnDock()
   Serial.write(135); // Clean
   delay(150);
   Serial.write(143); // Dock
+
+  roomba.cover(); // Clean
+  delay(10);
+  roomba.safeMode();
+  delay(50);
+  roomba.safeMode();
+  delay(50);
+  roomba.normalMode();
+  delay(50);
+  roomba.normalMode();
 #endif
 }
 
 void wakeOffDock()
 {
   DLOG("Wakeup Roomba off Dock\n");
-  Serial.write(131); // Safe mode
+  roomba.safeMode();
   delay(300);
-  Serial.write(130); // Passive mode
+  roomba.normalMode();
 }
 
 bool performCommand(const char *cmdchar)
@@ -343,6 +357,17 @@ void debugCallback()
   {
     setDateTime();
   }
+  else if (cmd == "sense")
+  {
+    DLOG("Request Sensor\n")
+    uint8_t dest[1];
+    bool data = roomba.getSensors(Roomba::SensorCliffLeft,dest, 1);
+
+    if(data) {
+      DLOG("%d ", dest[0]);
+    }
+
+  }
   else
   {
     DLOG("Unknown command %s\n", cmd.c_str());
@@ -424,6 +449,18 @@ bool parseRoombaStateFromStreamPacket(uint8_t *packet, int length, RoombaState *
       i += 3;
       break;
     case Roomba::SensorBumpsAndWheelDrops: // 7
+      i += 2;
+      break;
+    case Roomba::SensorCliffRight:
+      i += 2;
+      break;
+    case Roomba::SensorCliffLeft:
+      i += 2;
+      break;
+    case Roomba::SensorCliffFrontRight:
+      i += 2;
+      break;
+    case Roomba::SensorCliffFrontLeft:
       i += 2;
       break;
     case 128: // Unknown

@@ -2,7 +2,7 @@
 
 #define HOSTNAME "roomba" // e.g. roomba.local
 #define BRC_PIN 5
-#define ROOMBA_650_SLEEP_FIX 1
+//#define ROOMBA_650_SLEEP_FIX 0
 
 #define SET_DATETIME 1
 #define NTP_SERVER_1 "pool.ntp.org"
@@ -12,7 +12,7 @@
 //#define ENABLE_ADC_SLEEP
 
 // define your Roomba model, e.g. "780"
-#define ROOMBA_MODEL "Roomba 780"
+#define ROOMBA_MODEL "Roomba 870"
 
 // Only change if you know what you're doing!
 #define MQTT_PORT 1883

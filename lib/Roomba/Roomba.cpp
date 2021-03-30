@@ -84,7 +84,7 @@ void Roomba::power()
 }
 
 void Roomba::dock()
-{
+{ 
   _serial->write(143);
 }
 
@@ -92,6 +92,10 @@ void Roomba::demo(Demo demo)
 {
   _serial->write(136);
   _serial->write(demo);
+}
+
+void Roomba::normalMode() {
+  _serial->write(130);
 }
 
 void Roomba::cover()

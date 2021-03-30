@@ -416,6 +416,9 @@ public:
     // for full control of the Roomba
     void fullMode();
 
+    /// Sets the OI to Normal mode.
+    void normalMode();
+
     /// Puts a Roomba in sleep mode.
     /// Roomba only, no equivalent for Create.
     void power();
