@@ -94,51 +94,34 @@ void wakeup()
   roomba.start();
 }
 
-void wakeOnDock()
-{
-  DLOG("Wakeup Roomba on dock\n");
-  //wakeup();
-#ifdef ROOMBA_650_SLEEP_FIX
-  // Some black magic from @AndiTheBest to keep the Roomba awake on the dock
-  // See https://github.com/johnboiles/esp-roomba-mqtt/issues/3#issuecomment-402096638
-  delay(10);
-  Serial.write(135); // Clean
-  delay(150);
-  Serial.write(143); // Dock
-
-  roomba.cover(); // Clean
-  delay(10);
-  roomba.safeMode();
-  delay(50);
-  roomba.safeMode();
-  delay(50);
-  roomba.normalMode();
-  delay(50);
-  roomba.normalMode();
-#endif
-}
-
-void wakeOffDock()
-{
-  DLOG("Wakeup Roomba off Dock\n");
-  roomba.safeMode();
-  delay(300);
-  roomba.normalMode();
+void stopCleaning() {
+  if (roombaState.cleaning) {
+      DLOG("Stopping\n");
+      roomba.cover();
+  } else  {
+    DLOG("Not cleaning, can't stop\n");
+  }
 }
 
 bool performCommand(const char *cmdchar)
 {
-  wakeup();
 
+  wakeup();
+  delay(1000);
   // Char* string comparisons dont always work
   String cmd(cmdchar);
 
   // MQTT protocol commands
-  if (cmd == "turn_on")
+  if (cmd == "turn_on" || cmd == "start")
   {
-    DLOG("Turning on\n");
-    roomba.cover();
-    roombaState.cleaning = true;
+    if (!roombaState.cleaning) {
+      DLOG("Start cleaning\n");
+      roomba.cover();
+      roombaState.cleaning = true;
+    } else {
+      DLOG("Already cleaning!\n");
+    }
+
   }
   else if (cmd == "turn_off")
   {
@@ -146,44 +129,22 @@ bool performCommand(const char *cmdchar)
     roomba.power();
     roombaState.cleaning = false;
   }
-  else if (cmd == "start" || cmd == "pause")
+  else if (cmd == "stop" || cmd == "pause")
   {
-    DLOG("Toggling\n");
-    roomba.cover();
-  }
-  else if (cmd == "stop")
-  {
-    if (roombaState.cleaning)
-    {
-      DLOG("Stopping\n");
-      roomba.cover();
-    }
-    else
-    {
-      DLOG("Not cleaning, can't stop\n");
-    }
+    stopCleaning();
   }
   else if (cmd == "clean_spot")
   {
+    stopCleaning();
+    delay(1000);
     DLOG("Cleaning Spot\n");
     roombaState.cleaning = true;
     roomba.spot();
   }
-  else if (cmd == "locate")
-  {
-    DLOG("Playing song #0\n");
-    roomba.safeMode();
-    delay(50);
-    roomba.playSong(0);
-    delay(4000);
-    roomba.playSong(1);
-    delay(4000);
-    roomba.playSong(2);
-    delay(3500);
-    roomba.playSong(3);
-  }
   else if (cmd == "return_to_base")
   {
+    stopCleaning();
+    delay(1000);
     DLOG("Returning to Base\n");
     roombaState.cleaning = true;
     roomba.dock();
@@ -194,6 +155,8 @@ bool performCommand(const char *cmdchar)
   }
   return true;
 }
+
+
 
 char *getMAC(const char *divider = "")
 {
@@ -238,20 +201,6 @@ void mqttCallback(char *topic, byte *payload, unsigned int length)
   }
 }
 
-float readADC(int samples)
-{
-  // Basic code to read from the ADC
-  int adc = 0;
-  for (int i = 0; i < samples; i++)
-  {
-    delay(1);
-    adc += analogRead(A0);
-  }
-  adc = adc / samples;
-  float mV = adc * ADC_VOLTAGE_DIVIDER;
-  VLOG("ADC for %d is %.1fmV with %d samples\n", adc, mV, samples);
-  return mV;
-}
 
 void setDateTime()
 {
@@ -328,11 +277,6 @@ void debugCallback()
     DLOG("Toggle BRC pin\n");
     wakeup();
   }
-  else if (cmd == "readadc")
-  {
-    float adc = readADC(10);
-    DLOG("ADC voltage is %.1fmV\n", adc);
-  }
   else if (cmd == "streamresume")
   {
     DLOG("Resume streaming\n");
@@ -372,39 +316,6 @@ void debugCallback()
   {
     DLOG("Unknown command %s\n", cmd.c_str());
   }
-}
-
-void sleepIfNecessary()
-{
-#ifdef ENABLE_ADC_SLEEP
-  // Check the battery, if it's too low, sleep the ESP (so we don't murder the battery)
-  float mV = readADC(10);
-  // According to this post, you want to stop using NiMH batteries at about 0.9V per cell
-  // https://electronics.stackexchange.com/a/35879 For a 12 cell battery like is in the Roomba,
-  // That's 10.8 volts.
-  if (mV < 10800)
-  {
-    // Fire off a quick message with our most recent state, if MQTT is connected
-    DLOG("Battery voltage is low (%.1fV). Sleeping for 10 minutes\n", mV / 1000);
-    if (mqttClient.connected())
-    {
-      StaticJsonDocument<200> root;
-      root["battery_level"] = 0;
-      root["cleaning"] = false;
-      root["docked"] = false;
-      root["charging"] = false;
-      root["voltage"] = mV / 1000;
-      root["charge"] = 0;
-      String jsonStr;
-      serializeJson(root, jsonStr);
-      mqttClient.publish(getMQTTTopic(stateTopic), jsonStr.c_str(), true);
-    }
-    delay(200);
-
-    // Sleep for 10 minutes
-    ESP.deepSleep(600e6);
-  }
-#endif
 }
 
 bool parseRoombaStateFromStreamPacket(uint8_t *packet, int length, RoombaState *state)
@@ -529,8 +440,6 @@ void setup()
   // High-impedence on the BRC_PIN
   pinMode(BRC_PIN, INPUT);
 
-  // Sleep immediately if ENABLE_ADC_SLEEP and the battery is low
-  sleepIfNecessary();
 
   // Set Hostname.
   String hostname(HOSTNAME);
@@ -555,16 +464,6 @@ void setup()
   Debug.setSerialEnabled(false);
 #endif
 
-  // Learn locate song
-  roomba.safeMode();
-  byte locateSong0[18] = {55, 32, 55, 32, 55, 32, 51, 24, 58, 8, 55, 32, 51, 24, 58, 8, 55, 64};
-  byte locateSong1[18] = {62, 32, 62, 32, 62, 32, 63, 24, 58, 8, 54, 32, 51, 24, 58, 8, 55, 64};
-  byte locateSong2[24] = {67, 32, 55, 24, 55, 8, 67, 32, 66, 24, 65, 8, 64, 8, 63, 8, 64, 16, 30, 16, 56, 16, 61, 32};
-  byte locateSong3[28] = {60, 24, 59, 8, 58, 8, 57, 8, 58, 16, 10, 16, 52, 16, 54, 32, 51, 24, 58, 8, 55, 32, 51, 24, 58, 8, 55, 64};
-  roomba.song(0, locateSong0, 18);
-  roomba.song(1, locateSong1, 18);
-  roomba.song(2, locateSong2, 24);
-  roomba.song(3, locateSong3, 28);
 
   roomba.start();
   delay(100);
@@ -618,7 +517,6 @@ void sendConfig()
   root["sup_feat"][1] = "stop";
   root["sup_feat"][2] = "pause";
   root["sup_feat"][3] = "return_home";
-  root["sup_feat"][4] = "locate";
   root["sup_feat"][5] = "clean_spot";
   root["dev"]["name"] = String("Roomba ") + getMAC();
   root["dev"]["ids"][0] = getEntityID();
@@ -707,27 +605,6 @@ void loop()
       }
     }
   }
-  // Wakeup the roomba at fixed intervals - every 50 seconds
-  if (now - lastWakeupTime > 50000)
-  {
-    lastWakeupTime = now;
-    if (!roombaState.cleaning)
-    {
-      if (roombaState.docked)
-      {
-        wakeOnDock();
-      }
-      else
-      {
-        // wakeOffDock();
-        wakeup();
-      }
-    }
-    else
-    {
-      wakeup();
-    }
-  }
   // Report the status over mqtt at fixed intervals
   if (now - lastStateMsgTime > 10000)
   {
@@ -743,7 +620,6 @@ void loop()
       sendStatus();
       roombaState.sent = true;
     }
-    sleepIfNecessary();
   }
 
   readSensorPacket();
