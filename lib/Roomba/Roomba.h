@@ -14,17 +14,17 @@
 /// comands are only available on one or the other platform it is noted.
 ///
 /// The version of the package that this documentation refers to can be downloaded 
-/// from http://www.airspayce.com/mikem/arduino/Roomba/Roomba-1.3.zip
+/// from http://www.airspayce.com/mikem/arduino/Roomba/Roomba-1.4.zip
 /// You can find the latest version at http://www.airspayce.com/mikem/arduino/Roomba
 ///
-/// Tested on Arduino Duemilanove, Diecimila and Mega with arduino-0018 on OpenSuSE 11.1 and avr-libc-1.6.1-1.15,
-/// cross-avr-binutils-2.19-9.1, cross-avr-gcc-4.1.3_20080612-26.5.
+/// tested on Arduino 1.8.1 with ESP8266
 ///
 /// A number of example programs are included that work with the iRobot Create:
 /// \li TestSuite Runs on a Mega and exercises a number of the functions, checking for correct operation
 /// \li RoombaTest1 Runs in any Arduino, checks that sensors can be read from Create using the stream() command
-/// \li RoombaRCRx Demo program that shows how to control a Create using the RCRx Arduino library,
-/// an Arduino WiFi shield such as BlackWidow and the RCTx 
+/// \li RoombaRCRx OBSOLETE
+/// \li RoombaRCRxESP8266Demo program that shows how to control a Create using the RCRx Arduino library,
+/// an ESP8266 with built-in WiFi and the RCTx 
 /// iPhone app. Control a Create from your iPhone!
 ///
 /// A video domonstating this library (along with the http://www.airspayce.com/mikem/arduino/RCKit library)
@@ -32,7 +32,10 @@
 ///
 /// \par Installation
 /// Install in the usual way: unzip the distribution zip file to the libraries
-/// sub-folder of your sketchbook. 
+/// sub-folder of your sketchbook.
+///
+/// \par Prerequisites
+/// Install the RCRx library verison 2.6 or later from http://www.airspayce.com/mikem/arduino/RCKit/
 ///
 /// This software is Copyright (C) 2010 Mike McCauley. Use is subject to license
 /// conditions. The main licensing options available are GPL V2 or Commercial:
@@ -55,6 +58,8 @@
 /// \version 1.1 Updated docs, added Youtube video
 /// \version 1.2 Compiles under Arduino 1.0
 /// \version 1.3  Updated author and distribution location details to airspayce.com
+/// \version 1.4 2018-09-19 Added RoombaRCRxESP8266.ino example. RoombaRCRx.pde
+///              is now obsolete.
 ///
 /// \author  Mike McCauley (mikem@airspayce.com)
 // Copyright (C) 2010 Mike McCauley
@@ -411,7 +416,7 @@ public:
     /// In Safe mode, the cliff and wheel drop detectors work to prevent Roomba driving off a cliff
     void safeMode();
 
-    /// Sets the OI to Full mode.
+    /// Sets the IO to Full mode.
     /// In Full mode, the cliff and wheel drop detectors do not stop the motors: you are responsible
     // for full control of the Roomba
     void fullMode();
@@ -600,7 +605,6 @@ public:
     /// sends at startup and while charging.
     /// Create only. No equivalent on Roomba.
     /// \param[out] dest Destination where the read data is stored. Must have at least len bytes available.
-    /// \param[out] packetLen Lenth of the read packet
     /// \param[in] len Max number of sensor data bytes to store to dest
     /// \return true when a complete stream has been read, and the checksum is correct. The sensor data
     /// (at most len bytes) will have been stored into dest, ready for the caller to decode.
@@ -639,5 +643,13 @@ private:
     uint8_t         _pollChecksum; /// Running checksum counter of data bytes + count
 
 };
+
+/// @example RoombaRCRxESP8266/RoombaRCRxESP8266.ino
+/// Sample RCRx RCOIP receiver for driving a Create
+/// Receives RCOIP commmands on a ESP8266 and uses them to control the wheel motors on a Create
+/// Uses the driveDirect command so cant be used on Roomba
+
+/// @example TestSuite/TestSuite.pde
+/// Test suite for the Roomba class
 
 #endif
