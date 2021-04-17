@@ -1,7 +1,7 @@
-#include "secrets.h"
+//#include "secrets.h"
 
 #define HOSTNAME "roomba" // e.g. roomba.local
-#define BRC_PIN 5
+#define BRC_PIN 14
 //#define ROOMBA_650_SLEEP_FIX 0
 
 #define SET_DATETIME 1
@@ -9,13 +9,13 @@
 #define NTP_SERVER_2 "time.nist.gov"
 
 #define ADC_VOLTAGE_DIVIDER 44.551316985
-//#define ENABLE_ADC_SLEEP
+#define ENABLE_ADC_SLEEP 0
 
 // define your Roomba model, e.g. "780"
-#define ROOMBA_MODEL "Roomba 870"
+#define ROOMBA_MODEL "Roomba 866"
 
 // Only change if you know what you're doing!
-#define MQTT_PORT 1883
+//#define MQTT_PORT "1883"
 #define MQTT_DISCOVERY "homeassistant"
 #define MQTT_DEVICE_CLASS "vacuum"
 #define MQTT_DIVIDER "/"
