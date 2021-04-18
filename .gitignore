@@ -6,3 +6,4 @@
 src/secrets.h
 .vscode
 .pio
+esp-roomba.code-workspace
