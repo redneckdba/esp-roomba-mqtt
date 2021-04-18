@@ -1,5 +1,3 @@
-//#include "secrets.h"
-
 #define HOSTNAME "roomba" // e.g. roomba.local
 #define BRC_PIN 14
 //#define ROOMBA_650_SLEEP_FIX 0
@@ -15,7 +13,6 @@
 #define ROOMBA_MODEL "Roomba 866"
 
 // Only change if you know what you're doing!
-//#define MQTT_PORT "1883"
 #define MQTT_DISCOVERY "homeassistant"
 #define MQTT_DEVICE_CLASS "vacuum"
 #define MQTT_DIVIDER "/"
