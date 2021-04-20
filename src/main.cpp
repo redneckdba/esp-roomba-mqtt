@@ -465,10 +465,24 @@ void verboseLogPacket(uint8_t *packet, uint8_t length)
   }
   DLOG("\n");
 }
+
+
 void readSensorPacket()
 {
-  if(roomba.getSensors(21, roombaPacket, 4)){
-  DLOG("Got value:%s\n",roombaPacket);
+  uint8_t dest[1];
+
+  DLOG("Request Sensor\n")
+  bool received = roomba.getSensors(Roomba::SensorVoltage, dest, 1);
+// or
+//bool received = roomba.getSensors(22, dest, 1);
+
+  if (received)
+  {
+	DLOG("Data: %d ", dest[0]);
+  }
+  else
+  {
+    DLOG("Unknown command or timeout occurred\r\n");
   }
 /*  int i = 0;
   uint8_t packetLength;
