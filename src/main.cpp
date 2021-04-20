@@ -43,7 +43,7 @@ char MQTT_PASSWORD[40];
 
 
 // Roomba setup
-Roomba roomba(&Serial, Roomba::Baud115200);
+Roomba roomba(&Serial, Roomba::Baud57600);
 
 // Roomba state
 typedef struct
@@ -469,20 +469,21 @@ void verboseLogPacket(uint8_t *packet, uint8_t length)
 
 void readSensorPacket()
 {
-  uint8_t dest[1];
+  uint8_t dest[2];
 
   DLOG("Request Sensor\n")
-  bool received = roomba.getSensors(Roomba::SensorVoltage, dest, 1);
+//  bool received = roomba.getSensors(Roomba::SensorBatteryCapacity, dest, 2);
 // or
-//bool received = roomba.getSensors(22, dest, 1);
+bool received = roomba.getSensors(22, dest, 2);
 
   if (received)
   {
-	DLOG("Data: %d ", dest[0]);
+  // DLOG("data: %d %d \r\n", dest[0], dest[1]);
+    DLOG("data: %d \r\n",  (255*dest[0] + dest[1]));
   }
   else
   {
-    DLOG("Unknown command or timeout occurred\r\n");
+    DLOG("Unknown command or timeout occurred: %d\r\n", Roomba::SensorBatteryCapacity);
   }
 /*  int i = 0;
   uint8_t packetLength;
@@ -588,7 +589,7 @@ void setupLittleFS(){
 
 void setup()
 {
-  Serial.begin(115200);
+  Serial.begin(57600);
   Serial.println();
 
   // added for wifimanager config
