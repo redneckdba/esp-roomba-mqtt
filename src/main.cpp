@@ -82,6 +82,15 @@ uint8_t sensor_list[]={
     26
     };
 
+uint8_t sensor_list_1[]={
+  21,
+  24,
+  34,
+
+
+
+};
+
 
 // Central European Time (Frankfurt, Paris)
 TimeChangeRule CEST = {"CEST", Last, Sun, Mar, 2, 120}; // Central European Summer Time
@@ -471,9 +480,9 @@ void readSensorPacket()
 {
   uint8_t dest[2];
   int i = 0;
-  uint8_t packetLength;
+//  uint8_t packetLength;
     for (i=0;i<sizeof(sensor_list);i++){
-    DLOG("Request Sensor\n")
+    DLOG("Request Sensor: %d\r\n", sensor_list[i]);
     bool received = roomba.getSensors(sensor_list[i], dest, 2);
 // or
 //bool received = roomba.getSensors(22, dest, 2);
@@ -489,6 +498,28 @@ void readSensorPacket()
   }
     delay(4000);
   }
+  uint8_t dest_1[1];
+  int j = 0;
+//  uint8_t packetLength;
+    for (j=0;j<sizeof(sensor_list_1);j++){
+    DLOG("Request Sensor: %d\r\n", sensor_list_1[j]);
+    bool received = roomba.getSensors(sensor_list_1[j], dest_1, 1);
+// or
+//bool received = roomba.getSensors(22, dest, 2);
+
+  if (received)
+  {
+  // DLOG("data: %d %d \r\n", dest[0], dest[1]);
+    DLOG("data: %d \r\n",  dest_1[0]);
+  }
+  else
+  {
+    DLOG("Unknown command or timeout occurred: %d\r\n", sensor_list_1[j]);
+  }
+    delay(4000);
+  }
+
+
 /*  int i = 0;
   uint8_t packetLength;
   for (i=0;i<sizeof(sensor_list);i++){
