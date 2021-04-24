@@ -75,21 +75,20 @@ uint8_t sensors[] = {
     Roomba::SensorBatteryCharge,   // PID 25, 2 bytes, mAh, unsigned
     Roomba::SensorBatteryCapacity // PID 26, 2 bytes, mAh, unsigned
 };
-uint8_t sensor_list[]={
-    22,
-    23,
-    25,
-    26
-    };
+// structured list with sensorID, nBytes, sign (1=signed/0=unsigned)
+// sample entry: 
+// 21,2,1,
+// 24,3,0
+uint8_t sensor_list[]={ //beware: unverified list elements, samples only
+  Roomba::SensorChargingState,1,0,
+  Roomba::SensorVoltage,2,0,
+  Roomba::SensorCurrent,2,1,
+  Roomba::SensorBatteryTemperature,1,1,
+  Roomba::SensorBatteryCharge,2,0,
+  Roomba::SensorBatteryCapacity,2,0,
+  Roomba::SensorChargingSourcesAvailable,1,0
+  };
 
-uint8_t sensor_list_1[]={
-  21,
-  24,
-  34,
-
-
-
-};
 
 
 // Central European Time (Frankfurt, Paris)
@@ -478,43 +477,47 @@ void verboseLogPacket(uint8_t *packet, uint8_t length)
 
 void readSensorPacket()
 {
-  uint8_t dest[2];
-  int i = 0;
-//  uint8_t packetLength;
-    for (i=0;i<sizeof(sensor_list);i++){
+  uint8_t dest[10];
+  uint i = 0;
+    for (i = 0; i < sizeof(sensor_list); i += 3){
     DLOG("Request Sensor: %d\r\n", sensor_list[i]);
-    bool received = roomba.getSensors(sensor_list[i], dest, 2);
-// or
-//bool received = roomba.getSensors(22, dest, 2);
+    bool received = roomba.getSensors(sensor_list[i], dest, sensor_list[i+1]);
 
   if (received)
   {
-  // DLOG("data: %d %d \r\n", dest[0], dest[1]);
-    DLOG("data: %d \r\n",  (255*dest[0] + dest[1]));
+    switch (sensor_list[i+1]){
+      case 1:
+        if(dest[i+2]){      // signed parameter
+          DLOG("data: %d \r\n", dest[0]);
+        }
+        else{               // unsigned parameter
+          DLOG("data: %ud \r\n", dest[0]);
+        }
+        break;
+      case 2:
+        if(dest[i+2]){      // signed parameter
+          DLOG("data: %d \r\n",  (256*dest[0] + dest[1]));
+        }
+        else{               // unsigned parameter
+          DLOG("data: %ud \r\n",  (256*dest[0] + dest[1]));
+        }          
+        break;
+      case 3:
+        if(dest[i+2]){
+          DLOG("data: %d \r\n",  (65536*dest[0] + 256*dest[1] + dest[2]));
+        }
+        else{
+          DLOG("data: %ud \r\n",  (65536*dest[0] + 256*dest[1] + dest[2]));
+        }
+        break;
+      default:
+        DLOG("Unsupported format at: %d \r\n",  sensor_list[i]);
+        break;
+    }
   }
   else
   {
     DLOG("Unknown command or timeout occurred: %d\r\n", sensor_list[i]);
-  }
-    delay(4000);
-  }
-  uint8_t dest_1[1];
-  int j = 0;
-//  uint8_t packetLength;
-    for (j=0;j<sizeof(sensor_list_1);j++){
-    DLOG("Request Sensor: %d\r\n", sensor_list_1[j]);
-    bool received = roomba.getSensors(sensor_list_1[j], dest_1, 1);
-// or
-//bool received = roomba.getSensors(22, dest, 2);
-
-  if (received)
-  {
-  // DLOG("data: %d %d \r\n", dest[0], dest[1]);
-    DLOG("data: %d \r\n",  dest_1[0]);
-  }
-  else
-  {
-    DLOG("Unknown command or timeout occurred: %d\r\n", sensor_list_1[j]);
   }
     delay(4000);
   }
