@@ -68,26 +68,19 @@ RoombaState roombaState = {};
 
 // Roomba sensor packet
 uint8_t roombaPacket[100];
-uint8_t sensors[] = {
-    Roomba::SensorChargingState,   // PID 21, 1 byte
-    Roomba::SensorVoltage,         // PID 22, 2 bytes, mV, unsigned
-    Roomba::SensorCurrent,         // PID 23, 2 bytes, mA, signed
-    Roomba::SensorBatteryCharge,   // PID 25, 2 bytes, mAh, unsigned
-    Roomba::SensorBatteryCapacity // PID 26, 2 bytes, mAh, unsigned
-};
 // structured list with sensorID, nBytes, sign (1=signed/0=unsigned)
 // sample entry: 
 // 21,2,1,
 // 24,3,0
-uint8_t sensor_list[]={ //beware: unverified list elements, samples only
-  Roomba::SensorChargingState,1,0,
-  Roomba::SensorVoltage,2,0,
-  Roomba::SensorCurrent,2,1,
+uint8_t sensor_list[] = {
+//  Roomba::SensorChargingState,1,0,              // PID 21, 1 byte
+  Roomba::SensorVoltage,2,0,                    // PID 22, 2 bytes, mV, unsigned
+/*  Roomba::SensorCurrent,2,1,                    // PID 23, 2 bytes, mA, signed
   Roomba::SensorBatteryTemperature,1,1,
-  Roomba::SensorBatteryCharge,2,0,
-  Roomba::SensorBatteryCapacity,2,0,
+  Roomba::SensorBatteryCharge,2,0,              // PID 25, 2 bytes, mAh, unsigned
+  Roomba::SensorBatteryCapacity,2,0,            // PID 26, 2 bytes, mAh, unsigned
   Roomba::SensorChargingSourcesAvailable,1,0
-  };
+*/  };
 
 
 
@@ -342,7 +335,7 @@ void debugCallback()
     DLOG("Pause streaming\n");
     roomba.streamCommand(Roomba::StreamCommandPause);
   }
-  else if (cmd == "stream")
+ /* else if (cmd == "stream")
   {
     DLOG("Requesting stream\n");
     roomba.stream(sensors, sizeof(sensors));
@@ -351,7 +344,7 @@ void debugCallback()
   {
     DLOG("Resetting stream\n");
     roomba.stream({}, 0);
-  }
+  }*/
   else if (cmd == "time")
   {
     setDateTime();
@@ -485,13 +478,14 @@ void readSensorPacket()
 
   if (received)
   {
+    delay(2000);
     switch (sensor_list[i+1]){
       case 1:
         if(dest[i+2]){      // signed parameter
           DLOG("data: %d \r\n", dest[0]);
         }
         else{               // unsigned parameter
-          DLOG("data: %ud \r\n", dest[0]);
+          DLOG("data: %u \r\n", dest[0]);
         }
         break;
       case 2:
@@ -499,7 +493,7 @@ void readSensorPacket()
           DLOG("data: %d \r\n",  (256*dest[0] + dest[1]));
         }
         else{               // unsigned parameter
-          DLOG("data: %ud \r\n",  (256*dest[0] + dest[1]));
+          DLOG("data: %u \r\n",  (256*dest[0] + dest[1]));
         }          
         break;
       case 3:
@@ -507,7 +501,7 @@ void readSensorPacket()
           DLOG("data: %d \r\n",  (65536*dest[0] + 256*dest[1] + dest[2]));
         }
         else{
-          DLOG("data: %ud \r\n",  (65536*dest[0] + 256*dest[1] + dest[2]));
+          DLOG("data: %u \r\n",  (65536*dest[0] + 256*dest[1] + dest[2]));
         }
         break;
       default:
@@ -768,10 +762,10 @@ void setup()
   roomba.start();
   delay(100);
   // Reset stream sensor values
-  roomba.stream({}, 0);
-  delay(100);
+ // roomba.stream({}, 0);
+ // delay(100);
   // Request sensor stream
-  roomba.stream(sensors, sizeof(sensors));
+ // roomba.stream(sensors, sizeof(sensors));
 
 #if SET_DATETIME
   wakeup();
