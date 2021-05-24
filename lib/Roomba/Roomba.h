@@ -348,7 +348,7 @@ public:
 	Sensors21to26                  = 3,
 	Sensors27to34                  = 4,
 	Sensors35to42                  = 5,
-	Sensors7to42                    = 6,
+	Sensors7to42                   = 6,
 	SensorBumpsAndWheelDrops       = 7,
 	SensorWall                     = 8,
 	SensorCliffLeft                = 9,
