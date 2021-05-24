@@ -385,6 +385,7 @@ public:
 	SensorRadius                   = 40,
 	SensorRightVelocity            = 41,
 	SensorLeftVelocity             = 42,
+    SensorStatisWheel              = 58,
     } Sensor;
   
     /// Constructor. You can have multiple simultaneous Roomba if that makes sense.
@@ -416,7 +417,7 @@ public:
     /// In Safe mode, the cliff and wheel drop detectors work to prevent Roomba driving off a cliff
     void safeMode();
 
-    /// Sets the IO to Full mode.
+    /// Sets the OI to Full mode.
     /// In Full mode, the cliff and wheel drop detectors do not stop the motors: you are responsible
     // for full control of the Roomba
     void fullMode();

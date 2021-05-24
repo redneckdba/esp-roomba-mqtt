@@ -285,6 +285,7 @@ bool Roomba::getSensorsList(uint8_t* packetIDs, uint8_t numPacketIDs, uint8_t* d
   return getData(dest, len);
 }
 
+
 // Simple state machine to read sensor data and discard everything else
 bool Roomba::pollSensors(uint8_t* dest, uint8_t destSize, uint8_t *packetLen)
 {

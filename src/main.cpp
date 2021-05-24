@@ -49,22 +49,24 @@ Roomba roomba(&Serial, Roomba::Baud115200);
 typedef struct
 {
   // Sensor values
-  uint8_t chargingState;
+  uint8_t  chargingState;
   uint16_t voltage;
-  int16_t current;
+  int16_t  current;
+  int8_t   temperature;
   // Supposedly unsigned according to the OI docs, but I've seen it
   // underflow to ~65000mAh, so I think signed will work better.
-  int16_t charge;
+  uint16_t charge;
   uint16_t capacity;
-
+  uint8_t  charge_source;
+  uint8_t  stasis;
   // Derived state
   bool cleaning = false;
   bool docked = false;
-
   uint16_t timestamp;
 } RoombaState;
 
 RoombaState roombaState = {};
+RoombaState *state;
 
 // Roomba sensor packet
 uint8_t roombaPacket[100];
@@ -73,15 +75,15 @@ uint8_t roombaPacket[100];
 // 21,2,1,
 // 24,3,0
 uint8_t sensor_list[] = {
-//  Roomba::SensorChargingState,1,0,              // PID 21, 1 byte
+  Roomba::SensorChargingState,1,0,              // PID 21, 1 byte, unsigned
   Roomba::SensorVoltage,2,0,                    // PID 22, 2 bytes, mV, unsigned
-/*  Roomba::SensorCurrent,2,1,                    // PID 23, 2 bytes, mA, signed
-  Roomba::SensorBatteryTemperature,1,1,
+  Roomba::SensorCurrent,2,1,                    // PID 23, 2 bytes, mA, signed
+  Roomba::SensorBatteryTemperature,1,1,         // PID 24, 1 byte, Celsius, signed
   Roomba::SensorBatteryCharge,2,0,              // PID 25, 2 bytes, mAh, unsigned
   Roomba::SensorBatteryCapacity,2,0,            // PID 26, 2 bytes, mAh, unsigned
-  Roomba::SensorChargingSourcesAvailable,1,0
-*/  };
-
+  Roomba::SensorChargingSourcesAvailable,1,0,    // PID 34, 1 byte, code, unsigned
+  Roomba::SensorStatisWheel,58,1,0              // PID 58, 1 byte, code, unsigned
+  };
 
 
 // Central European Time (Frankfurt, Paris)
@@ -399,6 +401,65 @@ void sleepIfNecessary()
 #endif
 }
 
+void readSensorPacket()
+{
+  state->timestamp = millis();
+  uint8_t dest[10];
+  uint i = 0;
+    for (i = 0; i < sizeof(sensor_list); i += 3){
+    DLOG("Request Sensor: %d\r\n", sensor_list[i]);
+    bool received = roomba.getSensors(sensor_list[i], dest, sensor_list[i+1]);
+
+  if (received)
+  {
+    switch (sensor_list[i]){
+      case Roomba::SensorChargingState:
+        state->chargingState = dest[0];
+        DLOG("data: %u \r\n", state->chargingState);
+        break;
+      case Roomba::SensorVoltage:
+        state->voltage = (float) ((256*dest[0] + dest[1]))/1000.;
+        DLOG("data: %f5.2 \r\n", state->voltage);
+        break;
+      case Roomba::SensorCurrent:
+        state->current = (float) ((256*dest[0] + dest[1]))/1000.;
+        DLOG("data: %f5.2 \r\n", state->current);
+        break;
+      case Roomba::SensorBatteryTemperature:
+        state->temperature = dest[0];
+        DLOG("data: %d \r\n", state->temperature);
+        break;
+      case Roomba::SensorBatteryCharge:
+        state->charge = (float) ((256*dest[0] + dest[1]))/1000.;
+        DLOG("data: %f5.2 \r\n", state->charge);
+        break;
+      case Roomba::SensorBatteryCapacity:
+        state->capacity = (float) ((256*dest[0] + dest[1]))/1000.;
+        DLOG("data: %f5.2 \r\n", state->capacity);
+        break;
+      case Roomba::SensorChargingSourcesAvailable:
+        state->charge_source = dest[0];
+        DLOG("data: %u \r\n", state->charge_source);
+        break;
+      case Roomba::SensorStatisWheel:
+        state->stasis = dest[0];
+        DLOG("data: %u \r\n", state->stasis);
+        break;
+      default:
+        DLOG("Unsupported format at: %d \r\n",  sensor_list[i]);
+        break;
+    }
+  }
+  else
+  {
+    DLOG("Unknown command or timeout occurred: %d\r\n", sensor_list[i]);
+  }
+    delay(4000);
+  }
+}
+
+
+/*
 bool parseRoombaStateFromStreamPacket(uint8_t *packet, int length, RoombaState *state)
 {
   state->timestamp = millis();
@@ -456,7 +517,7 @@ bool parseRoombaStateFromStreamPacket(uint8_t *packet, int length, RoombaState *
   }
   return true;
 }
-
+*/
 void verboseLogPacket(uint8_t *packet, uint8_t length)
 {
   DLOG("Packet: ");
@@ -467,8 +528,8 @@ void verboseLogPacket(uint8_t *packet, uint8_t length)
   DLOG("\n");
 }
 
-
-void readSensorPacket()
+/*
+void readSensorPacketDebug()
 {
   uint8_t dest[10];
   uint i = 0;
@@ -478,7 +539,6 @@ void readSensorPacket()
 
   if (received)
   {
-    delay(2000);
     switch (sensor_list[i+1]){
       case 1:
         if(dest[i+2]){      // signed parameter
@@ -517,42 +577,8 @@ void readSensorPacket()
   }
 
 
-/*  int i = 0;
-  uint8_t packetLength;
-  for (i=0;i<sizeof(sensor_list);i++){
-    roomba.getSensors(sensor_list[i], &roombaPacket, sizeof(roombaPacket));
-    DLOG("Got value:%s\n",roombaPacket);
-  }
-*/
-  /*
-  bool received = roomba.getSensors(roombaPacket, sizeof(roombaPacket), &packetLength);
-  if (received)
-  {
-    RoombaState rs = {};
-    bool parsed = parseRoombaStateFromStreamPacket(roombaPacket, packetLength, &rs);
-    verboseLogPacket(roombaPacket, packetLength);
-    if (parsed)
-    {
-      roombaState = rs;
-      DLOG("Got Packet of len=%d! Distance:%dmm ChargingState:%d Voltage:%dmV Current:%dmA Charge:%dmAh Capacity:%dmAh\n", packetLength, roombaState.distance, roombaState.chargingState, roombaState.voltage, roombaState.current, roombaState.charge, roombaState.capacity);
-      roombaState.cleaning = false;
-      roombaState.docked = false;
-      if (roombaState.current < -400)
-      {
-        roombaState.cleaning = true;
-      }
-      else if (roombaState.current > -50)
-      {
-        roombaState.docked = true;
-      }
-    }
-    else
-    {
-      DLOG("Failed to parse packet\n");
-    }
-  }
-  */
 }
+*/
 /*
 void onOTAStart()
 {
