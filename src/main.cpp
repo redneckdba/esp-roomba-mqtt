@@ -940,11 +940,11 @@ void loop()
   {
     lastStateMsgTime = now;
       DLOG("Sending status\n");
-      delay(200);      
+      delay(200);
+      readSensorPacket();      
       sendStatus();
     //sleepIfNecessary();
   }
 
-  readSensorPacket();
   mqttClient.loop();
 }
