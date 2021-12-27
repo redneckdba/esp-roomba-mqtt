@@ -404,6 +404,13 @@ void sleepIfNecessary()
 
 void readSensorPacket()
 {
+state->timestamp = millis();
+uint8_t dest[10]; bool received = roomba.getSensors(Roomba::SensorChargingState,dest,0);
+delay(4000);
+}
+/*
+void readSensorPacket()
+{
   state->timestamp = millis();
   uint8_t dest[10];
   uint i = 0;
@@ -458,7 +465,7 @@ void readSensorPacket()
     delay(4000);
   }
 }
-
+*/
 /*
 void onOTAStart()
 {
@@ -821,7 +828,7 @@ void loop()
     lastStateMsgTime = now;
       DLOG("Sending status\n");
       delay(200);
-      readSensorPacket();      
+//      readSensorPacket();      
     //  sendStatus();
     //sleepIfNecessary();
   }
