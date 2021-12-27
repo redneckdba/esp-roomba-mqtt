@@ -66,7 +66,7 @@ typedef struct
 } RoombaState;
 
 RoombaState roombaState = {};
-RoombaState *state;
+//RoombaState *state;
 
 // Roomba sensor packet
 uint8_t roombaPacket[100];
@@ -75,15 +75,14 @@ uint8_t roombaPacket[100];
 // 21,2,1,
 // 24,3,0
 uint8_t sensor_list[] = {
-  Roomba::SensorChargingState,1,0              // PID 21, 1 byte, unsigned
-/*  Roomba::SensorVoltage,2,0,                    // PID 22, 2 bytes, mV, unsigned
+  Roomba::SensorChargingState,1,0,              // PID 21, 1 byte, unsigned
+  Roomba::SensorVoltage,2,0,                    // PID 22, 2 bytes, mV, unsigned
   Roomba::SensorCurrent,2,1,                    // PID 23, 2 bytes, mA, signed
   Roomba::SensorBatteryTemperature,1,1,         // PID 24, 1 byte, Celsius, signed
   Roomba::SensorBatteryCharge,2,0,              // PID 25, 2 bytes, mAh, unsigned
   Roomba::SensorBatteryCapacity,2,0,            // PID 26, 2 bytes, mAh, unsigned
   Roomba::SensorChargingSourcesAvailable,1,0,    // PID 34, 1 byte, code, unsigned
   Roomba::SensorStatisWheel,58,1,0              // PID 58, 1 byte, code, unsigned
-  */
   };
 
 
@@ -404,64 +403,62 @@ void sleepIfNecessary()
 
 void readSensorPacket()
 {
-state->timestamp = millis();
-uint8_t dest[10]; bool received = roomba.getSensors(Roomba::SensorChargingState,dest,0);
-delay(4000);
+DLOG("In readSensorPacket\r\n");
+//state->timestamp = millis(); // causing reboot
+uint8_t dest[10];
+//bool received = roomba.getSensors(Roomba::SensorChargingState,dest,1);
+bool received = roomba.getSensors(24,dest,1);
+DLOG("Data: %u\r\n", dest[0]);
 }
 /*
-void readSensorPacket()
-{
-  state->timestamp = millis();
+void readSensorPacket() {
+  roombaState.timestamp = millis();
   uint8_t dest[10];
   uint i = 0;
-    for (i = 0; i < sizeof(sensor_list); i += 3){
+  for (i = 0; i < sizeof(sensor_list); i += 3){
     DLOG("Request Sensor: %d\r\n", sensor_list[i]);
     bool received = roomba.getSensors(sensor_list[i], dest, sensor_list[i+1]);
-
-  if (received)
-  {
-    switch (sensor_list[i]){
-      case Roomba::SensorChargingState:
-        state->chargingState = dest[0];
-    //    DLOG("data: %u \r\n", state->chargingState);
-        break;
-      case Roomba::SensorVoltage:
-        state->voltage = (float) ((256*dest[0] + dest[1]))/1000.;
-    //    DLOG("data: %f5.2 \r\n", state->voltage);
-        break;
-      case Roomba::SensorCurrent:
-        state->current = (float) ((256*dest[0] + dest[1]))/1000.;
-    //    DLOG("data: %f5.2 \r\n", state->current);
-        break;
-      case Roomba::SensorBatteryTemperature:
-        state->temperature = dest[0];
-    //    DLOG("data: %d \r\n", state->temperature);
-        break;
-      case Roomba::SensorBatteryCharge:
-        state->charge = (float) ((256*dest[0] + dest[1]))/1000.;
-    //    DLOG("data: %f5.2 \r\n", state->charge);
-        break;
-      case Roomba::SensorBatteryCapacity:
-        state->capacity = (float) ((256*dest[0] + dest[1]))/1000.;
-    //    DLOG("data: %f5.2 \r\n", state->capacity);
-        break;
-      case Roomba::SensorChargingSourcesAvailable:
-        state->charge_source = dest[0];
-    //    DLOG("data: %u \r\n", state->charge_source);
-        break;
-      case Roomba::SensorStatisWheel:
-        state->stasis = dest[0];
-    //    DLOG("data: %u \r\n", state->stasis);
-        break;
-      default:
-        DLOG("Unsupported format at: %d \r\n",  sensor_list[i]);
-        break;
+    if (received){
+      switch (sensor_list[i]){
+        case Roomba::SensorChargingState:
+          roombaState.chargingState = dest[0];
+          DLOG("data: %u \r\n", roombaState.chargingState);
+          break;
+        case Roomba::SensorVoltage:
+          roombaState.voltage = (float) ((256*dest[0] + dest[1]))/1000.;
+          DLOG("data: %f5.2 \r\n", roombaState.voltage);
+          break;
+        case Roomba::SensorCurrent:
+          roombaState.current = (float) ((256*dest[0] + dest[1]))/1000.;
+          DLOG("data: %f5.2 \r\n", roombaState.current);
+          break;
+        case Roomba::SensorBatteryTemperature:
+          roombaState.temperature = dest[0];
+          DLOG("data: %d \r\n", roombaState.temperature);
+          break;
+        case Roomba::SensorBatteryCharge:
+          roombaState.charge = (float) ((256*dest[0] + dest[1]))/1000.;
+          DLOG("data: %f5.2 \r\n", roombaState.charge);
+          break;
+        case Roomba::SensorBatteryCapacity:
+          roombaState.capacity = (float) ((256*dest[0] + dest[1]))/1000.;
+          DLOG("data: %f5.2 \r\n", roombaState.capacity);
+          break;
+        case Roomba::SensorChargingSourcesAvailable:
+          roombaState.charge_source = dest[0];
+          DLOG("data: %u \r\n", roombaState.charge_source);
+          break;
+        case Roomba::SensorStatisWheel:
+          roombaState.stasis = dest[0];
+          DLOG("data: %u \r\n", roombaState.stasis);
+          break;
+        default:
+          DLOG("Unsupported format at: %d \r\n", sensor_list[i]);
+          break;
+      }
+    } else {
+      DLOG("Unknown command or timeout occurred: %d\r\n", sensor_list[i]);
     }
-  }
-  else
-  {
-    DLOG("Unknown command or timeout occurred: %d\r\n", sensor_list[i]);
-  }
     delay(4000);
   }
 }
@@ -828,7 +825,7 @@ void loop()
     lastStateMsgTime = now;
       DLOG("Sending status\n");
       delay(200);
-//      readSensorPacket();      
+      readSensorPacket();      
     //  sendStatus();
     //sleepIfNecessary();
   }
