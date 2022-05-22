@@ -2,7 +2,7 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
-//#include <ArduinoOTA.h>
+#include <ArduinoOTA.h>
 #include <Roomba.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
@@ -66,10 +66,9 @@ typedef struct
 } RoombaState;
 
 RoombaState roombaState = {};
-//RoombaState *state;
 
 // Roomba sensor packet
-uint8_t roombaPacket[100];
+// uint8_t roombaPacket[100];
 // structured list with sensorID, nBytes, sign (1=signed/0=unsigned)
 // sample entry: 
 // 21,2,1,
@@ -93,7 +92,7 @@ Timezone tz(CEST, CET);
 
 // Network setup
 WiFiClient wifiClient;
-//bool OTAStarted;
+bool OTAStarted;
 
 // MQTT setup
 PubSubClient mqttClient(wifiClient);
@@ -462,7 +461,7 @@ void readSensorPacket() {
     delay(4000);
   }
 }
-/*
+
 void onOTAStart()
 {
   DLOG("Starting OTA session\n");
@@ -470,7 +469,7 @@ void onOTAStart()
   roomba.streamCommand(Roomba::StreamCommandPause);
   OTAStarted = true;
 }
-*/
+
 //begin  added for wifiManager
 //flag for saving data
 bool shouldSaveConfig = false;
@@ -599,7 +598,7 @@ void setup()
     //end save
     shouldSaveConfig = false;
   }
-
+/*
   Serial.println("==================================");
   Serial.println("IP Address:");
   Serial.println(WiFi.localIP());
@@ -618,7 +617,7 @@ void setup()
   Serial.println("MQTT Port: ");
   Serial.println(MQTT_PORT);
   Serial.println("==================================");
-
+*/
 // end added for wifi manager config
 
   // High-impedence on the BRC_PIN
@@ -775,16 +774,16 @@ int lastTimeSync = 0;
 void loop()
 {
   // Important callbacks that _must_ happen every cycle
-  //ArduinoOTA.handle();
+  ArduinoOTA.handle();
   yield();
   Debug.handle();
 
   // Skip all other logic if we're running an OTA update
-  /*if (OTAStarted)
+  if (OTAStarted)
   {
     return;
   }
-*/
+
   long now = millis();
   if ( SET_DATETIME && (now / 1000 - lastTimeSync / 1000 ) > 300)
   {
@@ -825,8 +824,8 @@ void loop()
       DLOG("Sending status\n");
       delay(200);
       readSensorPacket();      
-    //  sendStatus();
-    //sleepIfNecessary();
+      sendStatus();
+    sleepIfNecessary();
   }
 
   mqttClient.loop();
