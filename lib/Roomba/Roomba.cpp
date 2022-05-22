@@ -18,7 +18,7 @@ void Roomba::reset()
     _serial->write(7);
 }
 
-// Start IO
+// Start OI
 // Changes mode to passive
 void Roomba::start()
 {
@@ -191,7 +191,7 @@ void Roomba::song(uint8_t songNumber, const uint8_t* data, int len)
 void Roomba::playSong(uint8_t songNumber)
 {
   _serial->write(141);
-  _serial->write(songNumber); 
+  _serial->write(songNumber);
 }
 
 // Start a stream of sensor data with the specified packet IDs in it
@@ -284,7 +284,6 @@ bool Roomba::getSensorsList(uint8_t* packetIDs, uint8_t numPacketIDs, uint8_t* d
   _serial->write(packetIDs, numPacketIDs);
   return getData(dest, len);
 }
-
 
 // Simple state machine to read sensor data and discard everything else
 bool Roomba::pollSensors(uint8_t* dest, uint8_t destSize, uint8_t *packetLen)

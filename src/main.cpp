@@ -49,6 +49,7 @@ Roomba roomba(&Serial, Roomba::Baud115200);
 typedef struct
 {
   // Sensor values
+  int16_t distance;
   uint8_t  chargingState;
   uint16_t voltage;
   int16_t  current;
@@ -63,6 +64,7 @@ typedef struct
   bool cleaning = false;
   bool docked = false;
   uint16_t timestamp;
+  bool sent;
 } RoombaState;
 
 RoombaState roombaState = {};
@@ -99,7 +101,6 @@ PubSubClient mqttClient(wifiClient);
 const char *commandTopic = MQTT_COMMAND_TOPIC;
 const char *stateTopic = MQTT_STATE_TOPIC;
 const char *configTopic = MQTT_CONFIG_TOPIC;
-
 
 void wakeup()
 {
@@ -147,7 +148,7 @@ bool performCommand(const char *cmdchar)
     roomba.power();
     roombaState.cleaning = false;
   }
-  else if (cmd == "stop" || cmd == "pause" || cmd == "start_pause")
+  else if (cmd == "stop" || cmd == "pause")
   {
     stopCleaning();
   }
@@ -336,7 +337,8 @@ void debugCallback()
     DLOG("Pause streaming\n");
     roomba.streamCommand(Roomba::StreamCommandPause);
   }
- /* else if (cmd == "stream")
+  /*
+  else if (cmd == "stream")
   {
     DLOG("Requesting stream\n");
     roomba.stream(sensors, sizeof(sensors));
@@ -345,7 +347,8 @@ void debugCallback()
   {
     DLOG("Resetting stream\n");
     roomba.stream({}, 0);
-  }*/
+  }
+  */
   else if (cmd == "time")
   {
     setDateTime();
@@ -399,17 +402,6 @@ void sleepIfNecessary()
   }
 #endif
 }
-/*
-void readSensorPacket()
-{
-DLOG("In readSensorPacket\r\n");
-//state->timestamp = millis(); // causing reboot
-uint8_t dest[10];
-//bool received = roomba.getSensors(Roomba::SensorChargingState,dest,1);
-bool received = roomba.getSensors(24,dest,1);
-DLOG("Data: %u\r\n", dest[0]);
-}
-*/
 void readSensorPacket() {
   roombaState.timestamp = millis();
   uint8_t dest[10];
@@ -424,24 +416,24 @@ void readSensorPacket() {
           DLOG("data: %u \r\n", roombaState.chargingState);
           break;
         case Roomba::SensorVoltage:
-          roombaState.voltage = (float) ((256*dest[0] + dest[1]))/1000.;
-          DLOG("data: %f5.2 \r\n", roombaState.voltage);
+          roombaState.voltage = (256*dest[0] + dest[1]);
+          DLOG("data: %d \r\n", roombaState.voltage);
           break;
         case Roomba::SensorCurrent:
-          roombaState.current = (float) ((256*dest[0] + dest[1]))/1000.;
-          DLOG("data: %f5.2 \r\n", roombaState.current);
+          roombaState.current = (256*dest[0] + dest[1]);
+          DLOG("data: %d \r\n", roombaState.current);
           break;
         case Roomba::SensorBatteryTemperature:
           roombaState.temperature = dest[0];
           DLOG("data: %d \r\n", roombaState.temperature);
           break;
         case Roomba::SensorBatteryCharge:
-          roombaState.charge = (float) ((256*dest[0] + dest[1]))/1000.;
-          DLOG("data: %f5.2 \r\n", roombaState.charge);
+          roombaState.charge = (256*dest[0] + dest[1]);
+          DLOG("data: %d \r\n", roombaState.charge);
           break;
         case Roomba::SensorBatteryCapacity:
-          roombaState.capacity = (float) ((256*dest[0] + dest[1]))/1000.;
-          DLOG("data: %f5.2 \r\n", roombaState.capacity);
+          roombaState.capacity = (256*dest[0] + dest[1]);
+          DLOG("data: %d \r\n", roombaState.capacity);
           break;
         case Roomba::SensorChargingSourcesAvailable:
           roombaState.charge_source = dest[0];
@@ -583,10 +575,6 @@ void setup()
     json["mqtt_user"]       = MQTT_USER;
     json["mqtt_password"]   = MQTT_PASSWORD;
 
-    // json["ip"]          = WiFi.localIP().toString();
-    // json["gateway"]     = WiFi.gatewayIP().toString();
-    // json["subnet"]      = WiFi.subnetMask().toString();
-
     File configFile = LittleFS.open("/config.json", "w");
     if (!configFile) {
       Serial.println("failed to open config file for writing");
@@ -641,11 +629,11 @@ void setup()
   {
     delay(500);
   }
-/*
+
   ArduinoOTA.setHostname((const char *)hostname.c_str());
   ArduinoOTA.begin();
   ArduinoOTA.onStart(onOTAStart);
-*/
+
   mqttClient.setServer(MQTT_SERVER, atoi(MQTT_PORT));
   mqttClient.setCallback(mqttCallback);
 
@@ -703,7 +691,7 @@ void sendConfig()
   {
     DLOG("MQTT Disconnected, not sending config\n");
     return;
-  }
+  } 
   StaticJsonDocument<500> root;
   root["name"] = String("Roomba ") + getMAC();
   root["unique_id"] = getEntityID();
@@ -822,10 +810,9 @@ void loop()
   {
     lastStateMsgTime = now;
       DLOG("Sending status\n");
-      delay(200);
       readSensorPacket();      
       sendStatus();
-    sleepIfNecessary();
+      sleepIfNecessary();
   }
 
   mqttClient.loop();
