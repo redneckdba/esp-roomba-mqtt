@@ -7,7 +7,7 @@
 #define NTP_SERVER_2 "time.nist.gov"
 
 #define ADC_VOLTAGE_DIVIDER 44.551316985
-#define ENABLE_ADC_SLEEP 1
+#define ENABLE_ADC_SLEEP 0
 
 // define your Roomba model, e.g. "780"
 #define ROOMBA_MODEL "Roomba 866"
