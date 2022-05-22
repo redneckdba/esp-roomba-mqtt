@@ -450,7 +450,7 @@ void readSensorPacket() {
     } else {
       DLOG("Unknown command or timeout occurred: %d\r\n", sensor_list[i]);
     }
-    delay(4000);
+ //   delay(4000);
   }
 }
 
