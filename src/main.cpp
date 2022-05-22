@@ -691,7 +691,7 @@ void sendConfig()
   {
     DLOG("MQTT Disconnected, not sending config\n");
     return;
-  } 
+  }
   StaticJsonDocument<500> root;
   root["name"] = String("Roomba ") + getMAC();
   root["unique_id"] = getEntityID();
@@ -728,7 +728,7 @@ void sendStatus()
   }
   StaticJsonDocument<200> root;
   //root["battery_level"] = (roombaState.charge * 100) / roombaState.capacity;
-  root["test"] = roombaState.capacity;
+  root["battery_level"] = roombaState.charge / MAX_BATT_POWER * 100;
   root["cleaning"] = roombaState.cleaning;
   root["docked"] = roombaState.docked;
   root["charging"] = roombaState.chargingState == Roomba::ChargeStateReconditioningCharging || roombaState.chargingState == Roomba::ChargeStateFullCharging || roombaState.chargingState == Roomba::ChargeStateTrickleCharging;

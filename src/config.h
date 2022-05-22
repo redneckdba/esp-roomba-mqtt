@@ -1,6 +1,6 @@
 #define HOSTNAME "roomba" // e.g. roomba.local
 #define BRC_PIN 14
-//#define ROOMBA_650_SLEEP_FIX 0
+#define MAX_BATT_POWER 3000 // battery capacity in mAh
 
 #define SET_DATETIME 1
 #define NTP_SERVER_1 "pool.ntp.org"
