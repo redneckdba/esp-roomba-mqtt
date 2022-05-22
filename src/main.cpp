@@ -400,7 +400,7 @@ void sleepIfNecessary()
   }
 #endif
 }
-
+/*
 void readSensorPacket()
 {
 DLOG("In readSensorPacket\r\n");
@@ -410,7 +410,7 @@ uint8_t dest[10];
 bool received = roomba.getSensors(24,dest,1);
 DLOG("Data: %u\r\n", dest[0]);
 }
-/*
+*/
 void readSensorPacket() {
   roombaState.timestamp = millis();
   uint8_t dest[10];
@@ -462,7 +462,6 @@ void readSensorPacket() {
     delay(4000);
   }
 }
-*/
 /*
 void onOTAStart()
 {
