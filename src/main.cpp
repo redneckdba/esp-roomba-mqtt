@@ -97,10 +97,11 @@ WiFiClient wifiClient;
 bool OTAStarted;
 
 // MQTT setup
-PubSubClient mqttClient(wifiClient);
+PubSubClient mqttClient;
 const char *commandTopic = MQTT_COMMAND_TOPIC;
 const char *stateTopic = MQTT_STATE_TOPIC;
 const char *configTopic = MQTT_CONFIG_TOPIC;
+const char *availabilityTopic = MQTT_AVAIL_TOPIC;
 
 void wakeup()
 {
@@ -450,7 +451,7 @@ void readSensorPacket() {
     } else {
       DLOG("Unknown command or timeout occurred: %d\r\n", sensor_list[i]);
     }
- //   delay(4000);
+    delay(500);
   }
 }
 
@@ -634,6 +635,7 @@ void setup()
   ArduinoOTA.begin();
   ArduinoOTA.onStart(onOTAStart);
 
+  mqttClient.setClient(wifiClient);
   mqttClient.setServer(MQTT_SERVER, atoi(MQTT_PORT));
   mqttClient.setCallback(mqttCallback);
 
@@ -674,9 +676,10 @@ void reconnect()
 {
   DLOG("Attempting MQTT connection...\n");
   // Attempt to connect
-  if (mqttClient.connect(HOSTNAME, MQTT_USER, MQTT_PASSWORD))
+  if (mqttClient.connect(HOSTNAME, MQTT_USER, MQTT_PASSWORD, MQTT_AVAIL_TOPIC, 2, true, "offline")) 
   {
     DLOG("MQTT connected\n");
+    mqttClient.publish(getMQTTTopic(availabilityTopic), "online", true);
     mqttClient.subscribe(getMQTTTopic(commandTopic));
   }
   else
@@ -728,7 +731,8 @@ void sendStatus()
   }
   StaticJsonDocument<200> root;
   //root["battery_level"] = (roombaState.charge * 100) / roombaState.capacity;
-  root["battery_level"] = roombaState.charge / MAX_BATT_POWER * 100;
+  //root["ts"] = now;
+  root["battery_level"] = roombaState.charge / MAX_BATT_CAPACITY * 100;
   root["cleaning"] = roombaState.cleaning;
   root["docked"] = roombaState.docked;
   root["charging"] = roombaState.chargingState == Roomba::ChargeStateReconditioningCharging || roombaState.chargingState == Roomba::ChargeStateFullCharging || roombaState.chargingState == Roomba::ChargeStateTrickleCharging;
